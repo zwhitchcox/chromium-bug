@@ -1,0 +1,42 @@
+<!--<input type="file" id="loadfile">-->
+<video controls id="video"></video>
+<script>
+var DEBUG = true
+var video = document.querySelector('#video')
+window.MediaSource = window.MediaSource || window.WebKitMediaSource
+if (!window.MediaSource) {
+  alert('Media Source API is not available')
+}
+
+var mediaSource = new MediaSource
+mediaSource.onsourceclose = debug
+video.src = URL.createObjectURL(mediaSource)
+var mediatype = 'video/mp4; codecs="avc1.42C01E, mp4a.40.2"' // videoplayback.mp4
+console.log('is supported', MediaSource.isTypeSupported(mediatype))
+mediaSource.addEventListener('sourceopen', function (e) {
+  var sourceBuffer = mediaSource.addSourceBuffer(mediatype)
+  var xhr = new XMLHttpRequest()
+  xhr.open('GET', 'http://localhost:3000/videoplayback.mp4', true)
+  xhr.responseType = 'arraybuffer'
+  xhr.send()
+  xhr.onload = function() {
+    if (xhr.status != 200) {
+      alert('unexpected status code')
+      return false
+    }
+    sourceBuffer.addEventListener('updateend', () => {
+      if (!sourceBuffer.updating && mediaSource.readyState === 'open') {
+        mediaSource.endOfStream()
+      }
+      video.play()
+    })
+    sourceBuffer.appendBuffer(xhr.response)
+  }
+})
+function debug(...args) {
+  if (!!DEBUG) {
+    console.dir(...args)
+  }
+  return function(...args2) { debug(args, ...args2)}
+}
+</script>

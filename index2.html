@@ -1,0 +1,54 @@
+<input type="file" id="loadfile">
+<video controls id="video"></video>
+<script>
+var DEBUG = true
+var video = document.querySelector('#video')
+window.MediaSource = window.MediaSource || window.WebKitMediaSource
+if (!window.MediaSource) {
+  alert('Media Source API is not available')
+}
+
+var loadfile = document.querySelector('#loadfile')
+loadfile.onchange = () => {
+  var mediaSource = new MediaSource
+  var mediatype = 'video/mp4; codecs="avc1.42C01E, mp4a.40.2"' // videoplayback.mp4
+  //var mediatype = 'video/mp4; codecs="avc1.640029, mp4a.40.2"'
+  //var mediatype = 'video/webm; codecs="vp8, vorbis"'
+  video.src = URL.createObjectURL(mediaSource)
+  MediaSource.isTypeSupported(mediatype)
+  mediaSource.addEventListener('sourceopen', function (e) {
+    var sourceBuffer = mediaSource.addSourceBuffer(mediatype)
+    var file = loadfile.files[0]
+    var reader = new FileReader()
+    reader.readAsArrayBuffer(file)
+    reader.onload = e =>  {
+      sourceBuffer.addEventListener('updateend', function (_) {
+        mediaSource.endOfStream();
+        video.play();
+      })
+      sourceBuffer.appendBuffer(e.target.result)
+    }
+  })
+}
+function debug(...args) {
+  if (!!DEBUG) {
+    console.dir(...args)
+  }
+  return function(...args2) { debug(args, ...args2)}
+}
+  //function GET(url, callback) {
+  //  var xhr = new XMLHttpRequest()
+  //  xhr.open('GET', url, true)
+  //  xhr.responseType = 'arraybuffer'
+  //  xhr.send()
+  //
+  //  xhr.onload = function(e) {
+  //    if (xhr.status != 200) {
+  //      alert("Unexpected status code " + xhr.status + " for " + url)
+  //      return false
+  //    }
+  //    callback(new Uint8Array(xhr.response))
+  //  }
+  //}
+</script>
+
